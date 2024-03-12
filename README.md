@@ -1,66 +1,14 @@
-## Foundry
+## Overview
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+This is a project to practice implementing a simple custom token swap mechanism.
 
-Foundry consists of:
+Conditions:
+- Pass all test cases (`forge test`)
+- Implement your own swap method, calculating prices in a way that differs from the 1:1 X + Y = K and X * Y = K models.
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## Reference
 
-## Documentation
-
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
-```
-
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+- The original practice project is from [Chi-AnTai/SimpleSwap](https://github.com/Chi-AnTai/SimpleSwap)
+- [UniSwap Docs | Protocal Concepts](https://docs.uniswap.org/concepts/protocol/concentrated-liquidity)
+- [Solidity](https://soliditylang.org/)
+- [Foundry Book](https://book.getfoundry.sh/)
