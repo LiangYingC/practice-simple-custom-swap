@@ -4,76 +4,110 @@ import "../src/TestERC20.sol";
 import "../src/SimpleSwap.sol";
 import { Test } from "forge-std/Test.sol";
 
+// 定義 SimpleSwapTest contract 並繼承 Test
 contract SimpleSwapTest is Test {
+  // 定義三個公開的地址變量，用來表示不同的用戶，包含終端使用者(user)、流動性提供者 1(lp1)、流動性提供者 2(lp2)
   address public user = makeAddr("user");
   address public lp1 = makeAddr("lp1");
   address public lp2 = makeAddr("lp2");
+  // 定義兩種不同的 token 變量 token0 與 token1
   TestERC20 public token0;
   TestERC20 public token1;
+  // 定義 SimpleSwap contract 類型的 simpleSwap
   SimpleSwap public simpleSwap;
 
+  // setUp 函式在每次測試開始前會執行，藉此設置初始狀態
   function setUp() public {
+    // 賦予 token0, token1 各別的 ERC20 instance
     token0 = new TestERC20("token 0", "TK0");
     token1 = new TestERC20("token 1", "TK1");
 
+    // 鑄造發放給 user, lp1, lp2 個自 100e18 單位的 token0
     token0.mint(user, 100e18);
     token0.mint(lp1, 100e18);
     token0.mint(lp2, 100e18);
     
+    // 鑄造發放給 user, lp1, lp2 個自 100e18 單位的 token1
     token1.mint(user, 100e18);
     token1.mint(lp1, 100e18);
     token1.mint(lp2, 100e18);
 
+    // 賦予 simpleSwap 由 token0, token1 地址 new 出的 SimpleSwap instance
     simpleSwap = new SimpleSwap(address(token0), address(token1));
 
+    // 使用 vm.startPrank(user) 模擬以 user 身份執行後續操作
     vm.startPrank(user);
+    // user 地址授權 SimpleSwap 合約從其賬戶中轉出最多 100e18 的 token0、token1
     token0.approve(address(simpleSwap), 100e18);
     token1.approve(address(simpleSwap), 100e18);
+    // 使用 vm.stopPrank() 結束模擬，後續操作不再被視為由 user 地址發起
     vm.stopPrank();
 
+    // 以下幾行類似上面的操作，但是換成 lp1 作為操作者
     vm.startPrank(lp1);
     token0.approve(address(simpleSwap), 100e18);
     token1.approve(address(simpleSwap), 100e18);
     vm.stopPrank();
 
+    // 以下幾行類似上面的操作，但是換成 lp2 作為操作者
     vm.startPrank(lp2);
     token0.approve(address(simpleSwap), 100e18);
     token1.approve(address(simpleSwap), 100e18);
     vm.stopPrank();
   }
 
+
+  // 測試最簡化版的添加流動性函式的正確情境，無需考量 lp1, lp2 添加的佔比問題
   function testAddLiquidity1() public {
     vm.startPrank(lp1);
+    // lp1 向 simpleSwap 添加 10e18 token0、token1 的流動性
     simpleSwap.addLiquidity1(10e18);
 
+    // 檢查 lp1 的 token0 和 token1 餘額是否符合預期，斷言剩下 90e18 單位
     assertEq(token0.balanceOf(lp1), 90e18);
     assertEq(token1.balanceOf(lp1), 90e18);
 
+    // 檢查 simpleSwap 的 token0 和 token1 餘額是否符合預期，斷言已有 10e18 單位
     assertEq(token0.balanceOf(address(simpleSwap)), 10e18);
     assertEq(token1.balanceOf(address(simpleSwap)), 10e18);
+
     vm.stopPrank();
   }
 
+  // 測試最簡化版的 swap 功能函式的正確情境，代幣 1:1 兌換
   function testSwap() public {
+    // 先添加流動性才有流動性可以 swap
     testAddLiquidity1();
 
     vm.startPrank(user);
+    // user 使用 5e18 token0 進行交換，兌換 token1
     simpleSwap.swap(address(token0), 5e18);
 
+    // 檢查 user 的 token0 和 token1 餘額是否符合預期
+    // token0 減少 5e18; token1 增加 5e18
     assertEq(token0.balanceOf(user), 95e18);
     assertEq(token1.balanceOf(user), 105e18);
 
+    // 檢查 simpleSwap 的 token0 和 token1 餘額是否符合預期
+    // token0 增加 5e18; token1 減少 5e18
     assertEq(token0.balanceOf(address(simpleSwap)), 15e18);
     assertEq(token1.balanceOf(address(simpleSwap)), 5e18);
+
     vm.stopPrank();
   }
 
+  // 測試最簡化版的移除流動性功能函式的正確情境，無需考量 lp1, lp2 添加的佔比問題
   function testRemoveLiquidity1() public {
+    // 先觸發 swap 其中會包含
+    // (1) 增加流動性 (2) 交換代幣，此時 user 和 simpleSwap 代幣數量是操作後的結果
     testSwap();
 
+    // 模擬 lp1 身份進行移除流動性，亦即把代幣從 simpleSwap 取回
     vm.startPrank(lp1);
     simpleSwap.removeLiquidity1();
 
+    // 檢查 lp1 的 token 餘額
+    // 從 simpleSwap 中取出所有 105e18 token0、取出所有 95e18 token1
     assertEq(token0.balanceOf(lp1), 105e18);
     assertEq(token1.balanceOf(lp1), 95e18);
 
