@@ -2,9 +2,11 @@
 
 This is a project to practice implementing a simple custom token swap mechanism.
 
-Conditions:
-- Pass all test cases (`forge test`)
-- Implement your own swap method, calculating prices in a way that differs from the 1:1 X + Y = K and X * Y = K models.
+Conditions: 
+- The swap ratio between token0 and token 1 always be 1:1.
+- Phase 1 only have one lp(lp1).
+- Phase 2 have two lp(lp1 and 1p2), you should record the share of liquidity providers.
+- Should Pass all test cases (`forge test`) in the end.
 
 ## Reference
 
