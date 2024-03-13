@@ -3,11 +3,9 @@ pragma solidity 0.8.20;
 import "./TestERC20.sol";
 
 contract SimpleSwap {
-  ///// Phase 1 /////
   TestERC20 public token0;
   TestERC20 public token1;
 
-  ///// Phase 2 /////
   uint256 public totalSupply = 0;
   mapping(address => uint256) public share;
 
@@ -15,14 +13,6 @@ contract SimpleSwap {
     // 送進來的是 address，先轉換成 TestERC20 類型後儲存
     token0 = TestERC20(_token0); 
     token1 = TestERC20(_token1);
-  }
-
-  ///// Phase 1 /////
-  function addLiquidity1(uint256 _amount) public {
-    // 從呼叫者（msg.sender）的賬戶中轉移 `_amount` 數量的 `token0`、`token1` 到當前合約地址（SimpleSwap address）
-    // 可以說是將 token0, token1 的 SimpleSwap address -> _balance 增加 _amount
-    token0.transferFrom(msg.sender, address(this), _amount);
-    token1.transferFrom(msg.sender, address(this), _amount);
   }
 
   function swap(address _tokenIn, uint256 _amountIn) public {
@@ -37,14 +27,7 @@ contract SimpleSwap {
     }
   }
 
-  function removeLiquidity1() public {
-     // 當前合約地址（SimpleSwap address）將所有的 token0、token1 轉回給呼叫者
-    token0.transfer(msg.sender, token0.balanceOf(address(this)));
-    token1.transfer(msg.sender, token1.balanceOf(address(this)));
-  }
-
-  ///// Phase 2 /////
-  function addLiquidity2(uint256 _amount) public {
+  function addLiquidity(uint256 _amount) public {
     token0.transferFrom(msg.sender, address(this), _amount);
     token1.transferFrom(msg.sender, address(this), _amount);
     // 記錄下目前總共的流動性
@@ -53,7 +36,7 @@ contract SimpleSwap {
     share[msg.sender] += _amount;
   }
 
-  function removeLiquidity2() public {
+  function removeLiquidity() public {
     // 計算出 msg.sender 可以拿出的 token0、token1 數量，需要依據 share/totalSupply 的比例計算。須注意過程中不要有小數計算。
     uint256 token0RemoveAmount = token0.balanceOf(address(this)) * share[msg.sender] / totalSupply;
     uint256 token1RemoveAmount = token1.balanceOf(address(this)) * share[msg.sender] / totalSupply;
