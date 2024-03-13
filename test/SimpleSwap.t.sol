@@ -56,8 +56,9 @@ contract SimpleSwapTest is Test {
     vm.stopPrank();
   }
 
+  ///// Phase 1 /////
 
-  // 測試最簡化版的添加流動性函式的正確情境，無需考量 lp1, lp2 添加的佔比問題
+  // 測試 addLiquidity1 添加流動性函式的正確情境，預期只有 lp1 參與，因此無需考量 lp1, lp2 添加的佔比問題
   function testAddLiquidity1() public {
     vm.startPrank(lp1);
     // lp1 向 simpleSwap 添加 10e18 token0、token1 的流動性
@@ -74,7 +75,7 @@ contract SimpleSwapTest is Test {
     vm.stopPrank();
   }
 
-  // 測試最簡化版的 swap 功能函式的正確情境，代幣 1:1 兌換
+  // 測試 swap 功能函式的正確情境，代幣 1:1 兌換
   function testSwap() public {
     // 先添加流動性才有流動性可以 swap
     testAddLiquidity1();
@@ -96,7 +97,7 @@ contract SimpleSwapTest is Test {
     vm.stopPrank();
   }
 
-  // 測試最簡化版的移除流動性功能函式的正確情境，無需考量 lp1, lp2 添加的佔比問題
+  // 測試 removeLiquidity1 移除流動性功能函式的正確情境，預期只有 lp1 參與，因此無需考量 lp1, lp2 添加的佔比問題
   function testRemoveLiquidity1() public {
     // 先觸發 swap 其中會包含
     // (1) 增加流動性 (2) 交換代幣，此時 user 和 simpleSwap 代幣數量是操作後的結果
@@ -116,64 +117,89 @@ contract SimpleSwapTest is Test {
     vm.stopPrank();
   }
 
-  // phase 2
-  // function testAddLiquidity2() public {
-  //   // lp1
-  //   vm.startPrank(lp1);
-  //   simpleSwap.addLiquidity2(10e18);
+  ///// Phase 2 /////
 
-  //   assertEq(token0.balanceOf(lp1), 90e18);
-  //   assertEq(token1.balanceOf(lp1), 90e18);
+  // 測試 addLiquidity2 添加流動性函式的正確情境，“需要”考量 lp1, lp2 添加的佔比問題
+  function testAddLiquidity2() public {
+    // 模擬 lp1 的身份進行操作，替流動池增加 10e18 的流動性
+    vm.startPrank(lp1);
+    simpleSwap.addLiquidity2(10e18);
 
-  //   assertEq(token0.balanceOf(address(simpleSwap)), 10e18);
-  //   assertEq(token1.balanceOf(address(simpleSwap)), 10e18);
-  //   vm.stopPrank();
+    // 檢查 lp1 的 token0 和 token1 餘額是否符合預期，斷言剩下 90e18 單位
+    assertEq(token0.balanceOf(lp1), 90e18);
+    assertEq(token1.balanceOf(lp1), 90e18);
 
-  //   // lp2
-  //   vm.startPrank(lp2);
-  //   simpleSwap.addLiquidity2(5e18);
+    // 檢查 simpleSwap 的 token0 和 token1 餘額是否符合預期，斷言擁有 10e18 單位
+    assertEq(token0.balanceOf(address(simpleSwap)), 10e18);
+    assertEq(token1.balanceOf(address(simpleSwap)), 10e18);
+    vm.stopPrank();
 
-  //   assertEq(token0.balanceOf(lp2), 95e18);
-  //   assertEq(token1.balanceOf(lp2), 95e18);
+    // 模擬 lp2 的身份進行操作，替流動池增加 5e18 的流動性
+    vm.startPrank(lp2);
+    simpleSwap.addLiquidity2(5e18);
 
-  //   assertEq(token0.balanceOf(address(simpleSwap)), 15e18);
-  //   assertEq(token1.balanceOf(address(simpleSwap)), 15e18);
-  //   vm.stopPrank();
-  // }
+    // 檢查 lp2 的 token0 和 token1 餘額是否符合預期，斷言剩下 95e18 單位
+    assertEq(token0.balanceOf(lp2), 95e18);
+    assertEq(token1.balanceOf(lp2), 95e18);
 
-  // function testSwap2() public {
-  //   testAddLiquidity2();
+    // 檢查 simpleSwap 的 token0 和 token1 餘額是否符合預期，斷言擁有增加後的 15e18 單位
+    assertEq(token0.balanceOf(address(simpleSwap)), 15e18);
+    assertEq(token1.balanceOf(address(simpleSwap)), 15e18);
+    vm.stopPrank();
+  }
 
-  //   vm.startPrank(user);
-  //   simpleSwap.swap(address(token0), 3e18);
+  // 測試 swap2 功能函式的正確情境，代幣 1:1 兌換
+  function testSwap2() public {
+    // 先添加流動性才有流動性可以 swap 此時
+    // lp1 有 90e18 的 token0, token1
+    // lp2 有 95e18 的 token0, token1
+    // simpleSwap 有 15e18 的 token0, token1
+    testAddLiquidity2();
 
-  //   assertEq(token0.balanceOf(user), 97e18);
-  //   assertEq(token1.balanceOf(user), 103e18);
+    // 模擬 user 進行 swap，用 token0 3e18 交換 token1 3e18
+    vm.startPrank(user);
+    simpleSwap.swap(address(token0), 3e18);
 
-  //   assertEq(token0.balanceOf(address(simpleSwap)), 18e18);
-  //   assertEq(token1.balanceOf(address(simpleSwap)), 12e18);
-  //   vm.stopPrank();
-  // }
+    // 斷言目前 user 擁有 97e18 token0 與 103e18 token1
+    assertEq(token0.balanceOf(user), 97e18);
+    assertEq(token1.balanceOf(user), 103e18);
 
-  // function testRemoveLiquidity2() public {
-  //   testSwap2();
-  //   // lp1
-  //   vm.startPrank(lp1);
-  //   simpleSwap.removeLiquidity2();
+    // 斷言目前 simpleSwap 擁有 18e18 token0 與 12e18 token1
+    assertEq(token0.balanceOf(address(simpleSwap)), 18e18);
+    assertEq(token1.balanceOf(address(simpleSwap)), 12e18);
+    vm.stopPrank();
+  }
 
-  //   assertEq(token0.balanceOf(lp1), 102e18);
-  //   assertEq(token1.balanceOf(lp1), 98e18);
-  //   vm.stopPrank();
+  // 測試 removeLiquidity2 移除流動性功能函式的正確情境，“需要”考量 lp1, lp2 添加的佔比問題
+  function testRemoveLiquidity2() public {
+    // 先觸發 testSwap2，目前
+    // lp1 投入 10e18 的 token0, token1，佔比 10/15 = 2/3。本身剩餘 90e18
+    // lp2 投入 5e18 的 token0, token1，佔比 5/15 = 1/3。本身剩餘 95e18
+    // simpleSwap 為 18e18 的 token0、12e18 的 token1
+    testSwap2();
 
-  //   // lp2
-  //   vm.startPrank(lp2);
-  //   simpleSwap.removeLiquidity1();
+    // 模擬 lp1 身份進行移除流動性，亦即把代幣從 simpleSwap 取回
+    vm.startPrank(lp1);
+    simpleSwap.removeLiquidity2();
 
-  //   assertEq(token0.balanceOf(lp2), 101e18);
-  //   assertEq(token1.balanceOf(lp2), 99e18);
-  //   vm.stopPrank();
+    // 斷言 lp1 擁有 18e18 * 2/3 + 90e18 token0 = 102e18
+    assertEq(token0.balanceOf(lp1), 102e18);
+    // 斷言 lp1 擁有 12e18 * 2/3 + 90e18 token1 = 98e18
+    assertEq(token1.balanceOf(lp1), 98e18);
+    vm.stopPrank();
 
-  //   assertEq(token0.balanceOf(address(simpleSwap)), 0);
-  //   assertEq(token1.balanceOf(address(simpleSwap)), 0);
-  // }
+    // 模擬 lp2 身份進行移除流動性，亦即把代幣從 simpleSwap 取回
+    vm.startPrank(lp2);
+    simpleSwap.removeLiquidity1();
+
+    // 斷言 lp2 取出剩餘的 token0 + 95e18 token0 = 101e18
+    assertEq(token0.balanceOf(lp2), 101e18);
+    // 斷言 lp2 取出剩餘的 token1 + 95e18 token1 = 99e18
+    assertEq(token1.balanceOf(lp2), 99e18);
+    vm.stopPrank();
+
+    // simpleSwap token 總數剩餘 0
+    assertEq(token0.balanceOf(address(simpleSwap)), 0);
+    assertEq(token1.balanceOf(address(simpleSwap)), 0);
+  }
 }
